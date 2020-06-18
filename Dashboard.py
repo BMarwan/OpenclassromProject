@@ -22,6 +22,7 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import plot_confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -32,22 +33,17 @@ import lightgbm as lgb
 
 def main():
     st.header("Prêt à dépenser")
+    st.write('Client solvable : 100001')
+    st.write('Client non solvable : 100005')
+
     #Load data
     df = load_data()
     #Preprocess with dummies and drop IDs
     test_features = preprocess_data(df)
-    #Load Models
-    clf_p, clf_n = load_models()
-    choose_model = st.radio(
-                "Selection du modèle :",
-                ('Privilégier clients solvables', 'Détecter clients non solvables'))
+    
+    clf = model_choice()
 
-    if choose_model == 'Privilégier clients solvables':
-        clf = clf_n
-    elif choose_model == 'Détecter clients non solvables':
-        clf = clf_p
-
-     #Create an input
+    #Create an input
     user_input = st.text_input("Entrer le numéro du client")
 
 
@@ -55,7 +51,7 @@ def main():
         with st.spinner("Training ongoing"):
             st.write(df[df['SK_ID_CURR']==int(user_input)])
             defaut_precentage = clf.predict_proba(test_features.iloc[df.index[df['SK_ID_CURR']==int(user_input)]])[0][1]
-            st.write('Probabilité de défaut de paiment : ', defaut_precentage*100,'%')
+            st.write('Probabilité de défaut de paiment : ', np.around(defaut_precentage*100, decimals=2),'%')
             
             
 
@@ -78,8 +74,22 @@ def preprocess_data(df):
     test_ids = test_features['SK_ID_CURR']
     test_features = test_features.drop(columns = ['SK_ID_CURR'])
     test_features = pd.get_dummies(test_features)
-
     return test_features
+
+
+def model_choice():
+    #Load Models
+    clf_p, clf_n = load_models()
+    #Choix du model
+    choose_model = st.radio(
+                "Selection du modèle :",
+                ('Privilégier clients solvables', 'Détecter clients non solvables'))
+
+    if choose_model == 'Privilégier clients solvables':
+        clf = clf_n
+    elif choose_model == 'Détecter clients non solvables':
+        clf = clf_p
+    return clf
 
 if __name__ == "__main__":
     main()
