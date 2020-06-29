@@ -111,10 +111,55 @@ def explain_score(df_test, df, id, clf):
                                  feature_names=df_test.columns,
                                  discretize_continuous=False)
      test = df.index[df['SK_ID_CURR']==id]
-     exp = lime1.explain_instance(df_test.iloc[test].to_numpy().ravel(), clf.predict_proba, num_features=10)
-            
-     st.write(exp.as_pyplot_figure(), plt.tight_layout())
+     exp = lime1.explain_instance(df_test.iloc[test].to_numpy().ravel(), 
+                                  clf.predict_proba, 
+                                  num_features=10,
+                                  #class_names=['client solvable, client non solvable']
+                                  )
+
+     exp_list = exp.as_list()       
+     exp_keys = []
+     exp_values = []
+     exp_positives = []
+     for i in range(len(exp_list)):
+         exp_keys.append(exp_list[i][0])
+         exp_values.append(exp_list[i][1])
+         exp_positives.append(exp_values[i] > 0)
+    
+     x = exp_keys
+     y = exp_values
+
+     fig, ax = plt.subplots(figsize=(15,8))    
+     width = 0.75 # the width of the bars 
+     ind = np.arange(len(y))  # the x locations for the groups
+     c = ax.barh(x, y, width, color=pd.Series(exp_positives).map({True: 'r', False: 'g'}))
+     ax.set_yticks(ind+width/2)
+     ax.set_yticklabels(x, minor=False)
+     plt.gca().invert_yaxis()
+
+     for index, value in enumerate(y):
+         plt.text(value, index, str(np.round(value*100, decimals=2)))
      
+     plt.title('Explication des résulats')
+     plt.xlabel('Poids en pourcentage')   
+     plt.tight_layout()
+     #_max_width_()
+     st.pyplot()
+     #st.write(exp.as_pyplot_figure(), plt.tight_layout())
+     #st.write(exp.show_in_notebook(show_all=False))
+
+def _max_width_():
+    max_width_str = f"max-width: 2000px;"
+    st.markdown(
+        f"""
+    <style>
+    .reportview-container .main .block-container{{
+        {max_width_str}
+    }}
+    </style>    
+    """,
+        unsafe_allow_html=True,
+    )
 
 
 if __name__ == "__main__":
